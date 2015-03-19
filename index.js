@@ -133,7 +133,11 @@ JWTool.prototype.verify = function (str) {
   return this.fetch(jwt.header.jku, jwt.header.kid)
     .then(
       function (jwk) {
-        var jwt = jwk.verify(str)
+        return jwk.verify(str)
+      }
+    )
+    .then(
+      function (jwt) {
         if (!jwt) { return P.reject(new JWTVerificationError('invalid')) }
         return P.resolve(jwt)
       }

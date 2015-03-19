@@ -1,6 +1,6 @@
 {
   "name": "fxa-jwtool",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "a JWT utility",
   "main": "index.js",
   "scripts": {
