@@ -1,0 +1,24 @@
+{
+  "name": "fxa-jwtool",
+  "version": "0.1.0",
+  "description": "a JWT utility",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap test"
+  },
+  "keywords": [
+    "jwt",
+    "jws",
+    "jwk"
+  ],
+  "license": "MPL 2.0",
+  "dependencies": {
+    "bluebird": "2.9.14",
+    "jws": "2.0.0",
+    "pem-jwk": "1.1.2",
+    "request": "2.53.0"
+  },
+  "devDependencies": {
+    "tap": "0.7.1"
+  }
+}
