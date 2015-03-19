@@ -27,7 +27,7 @@ function PrivateJWK(jwk, pem) {
 }
 inherits(PrivateJWK, JWK)
 
-PrivateJWK.prototype.sign = function (data) {
+PrivateJWK.prototype.signSync = function (data) {
   var payload = data || {}
   payload.iss = this.jwk.iss
   return jws.sign(
@@ -43,15 +43,23 @@ PrivateJWK.prototype.sign = function (data) {
   )
 }
 
+PrivateJWK.prototype.sign = function (data) {
+  return P.resolve(this.signSync(data))
+}
+
 function PublicJWK(jwk, pem) {
   JWK.call(this, jwk, pem)
 }
 inherits(PublicJWK, JWK)
 
-PublicJWK.prototype.verify = function (str) {
+PublicJWK.prototype.verifySync = function (str) {
   if (jws.verify(str, this.pem)) {
     return jws.decode(str)
   }
+}
+
+PublicJWK.prototype.verify = function (str) {
+  return P.resolve(this.verifySync(str))
 }
 
 function JWTVerificationError(msg) {
