@@ -1,6 +1,6 @@
 {
   "name": "fxa-jwtool",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "a JWT utility",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,7 @@
   "dependencies": {
     "bluebird": "2.9.14",
     "jws": "2.0.0",
-    "pem-jwk": "1.1.2",
+    "pem-jwk": "1.2.0",
     "request": "2.53.0"
   },
   "devDependencies": {
