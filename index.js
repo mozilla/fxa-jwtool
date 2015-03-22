@@ -1,9 +1,20 @@
+var fs = require('fs')
 var jws = require('jws')
 var P = require('bluebird')
 var inherits = require('util').inherits
 var request = require('request')
 var jwk2pem = require('pem-jwk').jwk2pem
 var pem2jwk = require('pem-jwk').pem2jwk
+
+function addExtras(obj, extras) {
+  extras = extras || {}
+  Object.keys(extras).forEach(
+    function (key) {
+      obj[key] = extras[key]
+    }
+  )
+  return obj
+}
 
 function JWK(jwk, pem) {
   this.jwk = jwk || pem2jwk(pem)
@@ -16,6 +27,22 @@ JWK.fromPEM = function (pem, extras) {
     return new PrivateJWK(obj, pem)
   }
   return new PublicJWK(obj, pem)
+}
+
+JWK.fromObject = function (obj, extras) {
+  obj = addExtras(obj, extras)
+  if (obj.d) {
+    return new PrivateJWK(obj)
+  }
+  return new PublicJWK(obj)
+}
+
+JWK.fromFile = function (filename, extras) {
+  var file = fs.readFileSync(filename, 'utf8')
+  if (file[0] === '{') {
+    return JWK.fromObject(JSON.parse(file), extras)
+  }
+  return JWK.fromPEM(file, extras)
 }
 
 JWK.prototype.toJSON = function () {
