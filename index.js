@@ -99,6 +99,7 @@ function JWTool(trusted) {
   this.trusted = trusted
   this.jwkSets = {}
 }
+JWTool.BN = require('pem-jwk').BN
 JWTool.JWK = JWK
 JWTool.PublicJWK = PublicJWK
 JWTool.PrivateJWK = PrivateJWK
