@@ -81,7 +81,7 @@ inherits(PublicJWK, JWK)
 
 PublicJWK.prototype.verifySync = function (str) {
   if (jws.verify(str, this.pem)) {
-    return jws.decode(str)
+    return jws.decode(str, { json: true })
   }
 }
 
