@@ -1,10 +1,49 @@
 var fs = require('fs')
-var jws = require('jws')
+var base64url = require('base64url')
+var crypto = require('crypto')
 var P = require('bluebird')
 var inherits = require('util').inherits
 var request = require('request')
 var jwk2pem = require('pem-jwk').jwk2pem
 var pem2jwk = require('pem-jwk').pem2jwk
+
+var JWT_STRING = /^([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)$/
+
+function sign(jwt, pem) {
+  var header = base64url.encode(JSON.stringify(jwt.header))
+  var payload = base64url.encode(JSON.stringify(jwt.payload))
+  var signed = header + '.' + payload
+  var s = crypto.createSign('RSA-SHA256')
+  s.update(signed)
+  var sig = base64url.encode(s.sign(pem))
+  return signed + '.' + sig
+}
+
+function decode(str) {
+  var match = JWT_STRING.exec(str)
+  if (!match) {
+    return null
+  }
+  try {
+    return {
+      header: JSON.parse(base64url.toBuffer(match[1])),
+      payload: JSON.parse(base64url.toBuffer(match[2])),
+      signature: base64url.toBuffer(match[3])
+    }
+  }
+  catch (e) {
+    return null
+  }
+}
+
+function verify(str, pem) {
+  var jwt = decode(str)
+  if (!jwt) { return false }
+  var signed = str.split('.', 2).join('.')
+  var v = crypto.createVerify('RSA-SHA256')
+  v.update(signed)
+  return v.verify(pem, jwt.signature) ? jwt.payload : false
+}
 
 function addExtras(obj, extras) {
   extras = extras || {}
@@ -57,16 +96,16 @@ inherits(PrivateJWK, JWK)
 PrivateJWK.prototype.signSync = function (data) {
   var payload = data || {}
   payload.iss = this.jwk.iss
-  return jws.sign(
+  return sign(
     {
       header: {
-        alg: this.jwk.alg,
+        alg: 'RS256',
         jku: this.jwk.jku,
         kid: this.jwk.kid
       },
-      payload: payload,
-      secret: this.pem
-    }
+      payload: payload
+    },
+    this.pem
   )
 }
 
@@ -80,9 +119,7 @@ function PublicJWK(jwk, pem) {
 inherits(PublicJWK, JWK)
 
 PublicJWK.prototype.verifySync = function (str) {
-  if (jws.verify(str, this.pem)) {
-    return jws.decode(str, { json: true })
-  }
+  return verify(str, this.pem)
 }
 
 PublicJWK.prototype.verify = function (str) {
@@ -104,6 +141,9 @@ JWTool.JWK = JWK
 JWTool.PublicJWK = PublicJWK
 JWTool.PrivateJWK = PrivateJWK
 JWTool.JWTVerificationError = JWTVerificationError
+JWTool.unverify = decode
+JWTool.verify = verify
+JWTool.sign = sign
 
 function getJwkSet(jku) {
   var d = P.defer()
@@ -153,7 +193,7 @@ JWTool.prototype.fetch = function (jku, kid) {
 }
 
 JWTool.prototype.verify = function (str) {
-  var jwt = jws.decode(str)
+  var jwt = decode(str)
   if (!jwt) { return P.reject(new JWTVerificationError('malformed')) }
   if (this.trusted.indexOf(jwt.header.jku) === -1) {
     return P.reject(new JWTVerificationError('untrusted'))
