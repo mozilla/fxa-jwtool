@@ -1,21 +1,27 @@
 var fs = require('fs')
-var base64url = require('base64url')
 var crypto = require('crypto')
 var P = require('bluebird')
 var inherits = require('util').inherits
-var request = require('request')
+var fetch = require('fetch').fetchUrl
 var jwk2pem = require('pem-jwk').jwk2pem
 var pem2jwk = require('pem-jwk').pem2jwk
 
 var JWT_STRING = /^([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)\.([a-zA-Z0-9\-_]+)$/
 
+function base64url(str) {
+  var base64 = Buffer(str).toString('base64')
+  return base64.replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '')
+}
+
 function sign(jwt, pem) {
-  var header = base64url.encode(JSON.stringify(jwt.header))
-  var payload = base64url.encode(JSON.stringify(jwt.payload))
+  var header = base64url(JSON.stringify(jwt.header))
+  var payload = base64url(JSON.stringify(jwt.payload))
   var signed = header + '.' + payload
   var s = crypto.createSign('RSA-SHA256')
   s.update(signed)
-  var sig = base64url.encode(s.sign(pem))
+  var sig = base64url(s.sign(pem))
   return signed + '.' + sig
 }
 
@@ -26,9 +32,9 @@ function decode(str) {
   }
   try {
     return {
-      header: JSON.parse(base64url.toBuffer(match[1])),
-      payload: JSON.parse(base64url.toBuffer(match[2])),
-      signature: base64url.toBuffer(match[3])
+      header: JSON.parse(Buffer(match[1], 'base64')),
+      payload: JSON.parse(Buffer(match[2], 'base64')),
+      signature: Buffer(match[3], 'base64')
     }
   }
   catch (e) {
@@ -147,28 +153,27 @@ JWTool.sign = sign
 
 function getJwkSet(jku) {
   var d = P.defer()
-  request(
+  fetch(
+    jku,
     {
-      method: 'GET',
-      url: jku,
-      strictSSL: true,
-      json: true
+      disableRedirects: true,
+      rejectUnauthorized: true
     },
-    function (err, res, json) {
-      if (err) {
-        // connection errors. return a "500"
-        return d.reject(err)
+    function (err, res, body) {
+      if (err) { return d.reject(err) }
+      try {
+        var json = JSON.parse(body)
+        var set = {}
+        json.keys.forEach(
+          function (key) {
+            set[key.kid] = new PublicJWK(key)
+          }
+        )
+        d.resolve(set)
       }
-      if (res.statusCode !== 200 || !Array.isArray(json.keys)) {
+      catch (e) {
         return d.reject(new JWTVerificationError('bad jku'))
       }
-      var set = {}
-      json.keys.forEach(
-        function (key) {
-          set[key.kid] = new PublicJWK(key)
-        }
-      )
-      d.resolve(set)
     }
   )
   return d.promise
