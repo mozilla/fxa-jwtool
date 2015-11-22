@@ -197,13 +197,17 @@ JWTool.prototype.fetch = function (jku, kid) {
     )
 }
 
-JWTool.prototype.verify = function (str) {
+JWTool.prototype.verify = function (str, defaults) {
+  defaults = defaults || {}
   var jwt = decode(str)
   if (!jwt) { return P.reject(new JWTVerificationError('malformed')) }
-  if (this.trusted.indexOf(jwt.header.jku) === -1) {
+
+  var jku = jwt.header.jku || defaults.jku
+  var kid = jwt.header.kid || defaults.kid
+  if (this.trusted.indexOf(jku) === -1) {
     return P.reject(new JWTVerificationError('untrusted'))
   }
-  return this.fetch(jwt.header.jku, jwt.header.kid)
+  return this.fetch(jku, kid)
     .then(
       function (jwk) {
         return jwk.verify(str)

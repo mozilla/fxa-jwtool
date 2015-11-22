@@ -1,13 +1,13 @@
 {
   "name": "fxa-jwtool",
   "description": "a JWT utility",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "author": "Mozilla (https://mozilla.org/)",
   "bugs": {
     "url": "https://github.com/mozilla/fxa-jwtool/issues"
   },
   "dependencies": {
-    "bluebird": "2.9.15",
+    "bluebird": "3.0.5",
     "fetch": "0.3.6",
     "pem-jwk": "1.5.1"
   },
